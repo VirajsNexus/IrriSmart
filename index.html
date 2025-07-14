@@ -8,15 +8,9 @@
     <!-- Tailwind (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Firebase (v9 ES Modules) -->
+    <!-- Firebase (v9 ES Modules) -->
     <script type="module">
-        /**********************
-         *  Firebase Setup   *
-         **********************/
-        import {
-            initializeApp
-        } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
-
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
         import {
             getAuth,
             GoogleAuthProvider,
@@ -27,7 +21,6 @@
             updateProfile
         } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
 
-        // Your Firebase config
         const firebaseConfig = {
             apiKey: "AIzaSyDBIZAh-xGWuxMoHnhiWvTNDVm8lHnYdvw",
             authDomain: "smartirri-vj2609.firebaseapp.com",
@@ -38,7 +31,6 @@
             measurementId: "G-4LTHYHF9JG"
         };
 
-        // Init Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
@@ -52,12 +44,40 @@
             const loginError = qs("#loginError");
             const registerError = qs("#registerError");
             const googleBtn = qs("#googleSignInBtn");
-
             const cityForm = qs("#cityForm");
             const dashboard = qs("#dashboard");
             const locationForm = qs("#locationForm");
             const changeLocationBtn = qs("#changeLocation");
             const locationInfo = qs("#locationInfo");
+
+            loginForm.classList.remove("hidden");
+            registerForm.classList.add("hidden");
+
+            loginForm.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const email = qs("#email").value;
+                const password = qs("#password").value;
+
+                try {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    loginModal.classList.add("hidden");
+                    restoreDashboard();
+                } catch (err) {
+                    loginError.textContent = err.message;
+                    loginError.classList.remove("hidden");
+                }
+            });
+
+            googleBtn.addEventListener("click", async () => {
+                try {
+                    await signInWithPopup(auth, provider);
+                    loginModal.classList.add("hidden");
+                    restoreDashboard();
+                } catch (err) {
+                    loginError.textContent = err.message;
+                    loginError.classList.remove("hidden");
+                }
+            });
 
             onAuthStateChanged(auth, (user) => {
                 if (user) {
@@ -67,63 +87,6 @@
                     loginModal.classList.remove("hidden");
                 }
             });
-
-            loginForm.addEventListener("submit", (e) => {
-                e.preventDefault();
-                const email = qs("#email").value;
-                const password = qs("#password").value;
-
-                signInWithEmailAndPassword(auth, email, password)
-                    .then(() => {
-                        loginError.classList.add("hidden");
-                    })
-                    .catch((err) => {
-                        loginError.textContent = err.message;
-                        loginError.classList.remove("hidden");
-                    });
-            });
-
-            registerForm.addEventListener("submit", (e) => {
-                e.preventDefault();
-                const username = qs("#regUsername").value;
-                const email = qs("#regEmail").value;
-                const password = qs("#regPassword").value;
-                const confirmPassword = qs("#regConfirmPassword").value;
-
-                if (password !== confirmPassword) {
-                    registerError.textContent = "Passwords don't match";
-                    registerError.classList.remove("hidden");
-                    return;
-                }
-
-                createUserWithEmailAndPassword(auth, email, password)
-                    .then(({ user }) => updateProfile(user, { displayName: username }))
-                    .then(() => {
-                        registerError.classList.add("hidden");
-                    })
-                    .catch((err) => {
-                        registerError.textContent = err.message;
-                        registerError.classList.remove("hidden");
-                    });
-            });
-
-            googleBtn.addEventListener("click", () => {
-                signInWithPopup(auth, provider).catch((err) => {
-                    loginError.textContent = err.message;
-                    loginError.classList.remove("hidden");
-                });
-            });
-
-            qs("#loginTab").onclick = () => toggleTabs("login");
-            qs("#registerTab").onclick = () => toggleTabs("register");
-
-            function toggleTabs(tab) {
-                const isLogin = tab === "login";
-                loginForm.classList.toggle("hidden", !isLogin);
-                registerForm.classList.toggle("hidden", isLogin);
-                qs("#loginTab").classList.toggle("border-green-700", isLogin);
-                qs("#registerTab").classList.toggle("border-green-700", !isLogin);
-            }
 
             locationForm.addEventListener("submit", (e) => {
                 e.preventDefault();
@@ -151,26 +114,6 @@
                 cityForm.classList.add("hidden");
                 dashboard.classList.remove("hidden");
                 locationInfo.textContent = `${city}, ${country}`;
-
-                const cardGrid = qs("#cardGrid");
-                cardGrid.innerHTML = `
-                    <div class="dashboard-card bg-white rounded-lg shadow-md p-4">
-                        <h2 class="text-xl font-semibold mb-2">🌦️ Weather</h2>
-                        <p>Temperature: 28°C</p>
-                        <p>Humidity: 60%</p>
-                    </div>
-                    <div class="dashboard-card bg-white rounded-lg shadow-md p-4">
-                        <h2 class="text-xl font-semibold mb-2">💧 Soil Moisture</h2>
-                        <p>Moisture Level: 45%</p>
-                        <div class="progress-bar bg-gray-200 mt-2">
-                            <div class="progress-fill bg-green-500" style="width: 45%;"></div>
-                        </div>
-                    </div>
-                    <div class="dashboard-card bg-white rounded-lg shadow-md p-4">
-                        <h2 class="text-xl font-semibold mb-2">🚰 Pump Status</h2>
-                        <p>Status: <span class="text-green-600 font-semibold">ON</span></p>
-                    </div>
-                `;
             }
         });
     </script>
@@ -183,25 +126,61 @@
             transform: translateY(-5px);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
         }
-        .progress-bar {
-            height: 20px;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        .progress-fill {
-            height: 100%;
-            transition: width 0.5s ease;
-        }
     </style>
 </head>
-<body class="min-h-screen bg-green-50">
+
+<body class="bg-green-50 min-h-screen">
     <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <!-- Login Modal UI -->
+        <div class="bg-white rounded-lg p-6 w-80">
+            <div class="flex mb-4 border-b">
+                <button id="loginTab" class="flex-1 py-2 font-bold text-green-700 border-b-2 border-green-700">Login</button>
+                <button id="registerTab" class="flex-1 py-2 font-medium text-gray-500">Register</button>
+            </div>
+
+            <form id="loginForm" class="space-y-4">
+                <input type="email" id="email" placeholder="Email" class="w-full p-2 border rounded" required />
+                <input type="password" id="password" placeholder="Password" class="w-full p-2 border rounded" required />
+                <div id="loginError" class="text-red-500 text-sm hidden"></div>
+                <button type="submit" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">Sign In</button>
+            </form>
+
+            <div class="flex items-center my-4">
+                <div class="flex-grow border-t border-gray-300"></div>
+                <span class="mx-2 text-gray-500 text-sm">OR</span>
+                <div class="flex-grow border-t border-gray-300"></div>
+            </div>
+
+            <button id="googleSignInBtn" class="w-full flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo" class="h-5 w-5 mr-2" />
+                Sign in with Google
+            </button>
+
+            <form id="registerForm" class="space-y-4 hidden mt-6">
+                <input type="text" id="regUsername" placeholder="Username" class="w-full p-2 border rounded" required />
+                <input type="email" id="regEmail" placeholder="Email" class="w-full p-2 border rounded" required />
+                <input type="password" id="regPassword" placeholder="Password" class="w-full p-2 border rounded" required />
+                <input type="password" id="regConfirmPassword" placeholder="Confirm Password" class="w-full p-2 border rounded" required />
+                <div id="registerError" class="text-red-500 text-sm hidden"></div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Register</button>
+            </form>
+        </div>
     </div>
+
     <div class="container mx-auto px-4 py-8">
         <div id="cityForm" class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6">
-            <!-- City Form UI -->
+            <div class="text-center mb-6">
+                <h1 class="text-3xl font-bold text-green-700">Smart Irrigation System</h1>
+                <p class="text-gray-600 mt-2">Enter your location to begin monitoring</p>
+                <p class="text-sm text-gray-500 mt-4">Developed by Viraj Jamdhade</p>
+            </div>
+
+            <form id="locationForm" class="space-y-4">
+                <input type="text" id="city" name="city" placeholder="City" class="w-full px-3 py-2 border rounded" required />
+                <input type="text" id="country" name="country" placeholder="Country" class="w-full px-3 py-2 border rounded" required />
+                <button type="submit" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">Start Monitoring</button>
+            </form>
         </div>
+
         <div id="dashboard" class="hidden">
             <div class="flex justify-between items-center mb-8">
                 <div>
@@ -210,11 +189,22 @@
                 </div>
                 <button id="changeLocation" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">Change Location</button>
             </div>
-            <div id="cardGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Cards will be injected here -->
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow dashboard-card">
+                    <h2 class="text-lg font-semibold text-green-600 mb-2">Soil Moisture</h2>
+                    <p class="text-gray-600">Value: 45%</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow dashboard-card">
+                    <h2 class="text-lg font-semibold text-green-600 mb-2">Temperature</h2>
+                    <p class="text-gray-600">Value: 28°C</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow dashboard-card">
+                    <h2 class="text-lg font-semibold text-green-600 mb-2">Humidity</h2>
+                    <p class="text-gray-600">Value: 60%</p>
+                </div>
             </div>
         </div>
     </div>
 </body>
 </html>
-
