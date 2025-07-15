@@ -1,382 +1,386 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" >
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Smart Irrigation System</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Smart Irrigation System</title>
 
-    <!-- Tailwind (CDN) -->
-    <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Firebase (v9 ES Modules) -->
-    <script type="module">
-        /**********************
-         *  Firebase Setup   *
-         **********************/
-        import {
-            initializeApp
-        } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
+  <!-- Firebase (v9 ES Modules) -->
+  <script type="module">
+    import {
+      initializeApp
+    } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
 
-        import {
-            getAuth,
-            GoogleAuthProvider,
-            signInWithPopup,
-            createUserWithEmailAndPassword,
-            signInWithEmailAndPassword,
-            onAuthStateChanged,
-            updateProfile
-        } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      signInWithPopup,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      onAuthStateChanged,
+      updateProfile
+    } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
 
-        // Your Firebase config
-        const firebaseConfig = {
-            apiKey: "AIzaSyDBIZAh-xGWuxMoHnhiWvTNDVm8lHnYdvw",
-            authDomain: "smartirri-vj2609.firebaseapp.com",
-            projectId: "smartirri-vj2609",
-            storageBucket: "smartirri-vj2609.appspot.com",
-            messagingSenderId: "581137454963",
-            appId: "1:581137454963:web:b9b4bdde231d6f09c91706",
-            measurementId: "G-4LTHYHF9JG"
-        };
+    // Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDBIZAh-xGWuxMoHnhiWvTNDVm8lHnYdvw",
+      authDomain: "smartirri-vj2609.firebaseapp.com",
+      projectId: "smartirri-vj2609",
+      storageBucket: "smartirri-vj2609.appspot.com",
+      messagingSenderId: "581137454963",
+      appId: "1:581137454963:web:b9b4bdde231d6f09c91706",
+      measurementId: "G-4LTHYHF9JG"
+    };
 
-        // Init Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const provider = new GoogleAuthProvider();
+    // Init Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
 
-        /***********************
-         *  Utility Functions  *
-         ***********************/
-        const qs = (sel) => document.querySelector(sel);
-        const qsa = (sel) => document.querySelectorAll(sel);
+    const qs = (sel) => document.querySelector(sel);
 
-        // Dummy placeholders (replace with your own impl later)
-        const simulateSensorData = () => {};
-        const checkSavedLocation = () => {};
+    document.addEventListener("DOMContentLoaded", () => {
+      const loginModal = qs("#loginModal");
+      const loginForm = qs("#loginForm");
+      const registerForm = qs("#registerForm");
+      const loginError = qs("#loginError");
+      const registerError = qs("#registerError");
+      const googleBtn = qs("#googleSignInBtn");
 
-        /***********************
-         *   Auth Workflow     *
-         ***********************/
-        document.addEventListener("DOMContentLoaded", () => {
-            /* ----------  Elements  ---------- */
-            const loginModal = qs("#loginModal");
-            const loginForm = qs("#loginForm");
-            const registerForm = qs("#registerForm");
-            const loginError = qs("#loginError");
-            const registerError = qs("#registerError");
-            const googleBtn = qs("#googleSignInBtn");
+      const cityForm = qs("#cityForm");
+      const dashboard = qs("#dashboard");
+      const locationForm = qs("#locationForm");
+      const changeLocationBtn = qs("#changeLocation");
+      const locationInfo = qs("#locationInfo");
 
-            const cityForm = qs("#cityForm");
-            const dashboard = qs("#dashboard");
-            const locationForm = qs("#locationForm");
-            const changeLocationBtn = qs("#changeLocation");
-            const locationInfo = qs("#locationInfo");
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          loginModal.classList.add("hidden");
+          restoreDashboard();
+        } else {
+          loginModal.classList.remove("hidden");
+        }
+      });
 
-            /* ----------  Auth State ---------- */
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    loginModal.classList.add("hidden");
-                    restoreDashboard();
-                } else {
-                    loginModal.classList.remove("hidden");
-                }
-            });
+      loginForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const email = qs("#email").value;
+        const password = qs("#password").value;
 
-            /* ----------  Login  ---------- */
-            loginForm.addEventListener("submit", (e) => {
-                e.preventDefault();
-                const email = qs("#email").value;
-                const password = qs("#password").value;
+        signInWithEmailAndPassword(auth, email, password)
+          .then(() => {
+            loginError.classList.add("hidden");
+          })
+          .catch((err) => {
+            loginError.textContent = err.message;
+            loginError.classList.remove("hidden");
+          });
+      });
 
-                signInWithEmailAndPassword(auth, email, password)
-                    .then(() => {
-                        loginError.classList.add("hidden");
-                    })
-                    .catch((err) => {
-                        loginError.textContent = err.message;
-                        loginError.classList.remove("hidden");
-                    });
-            });
+      registerForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const username = qs("#regUsername").value;
+        const email = qs("#regEmail").value;
+        const password = qs("#regPassword").value;
+        const confirmPassword = qs("#regConfirmPassword").value;
 
-            /* ----------  Register  ---------- */
-            registerForm.addEventListener("submit", (e) => {
-                e.preventDefault();
-                const username = qs("#regUsername").value;
-                const email = qs("#regEmail").value;
-                const password = qs("#regPassword").value;
-                const confirmPassword = qs("#regConfirmPassword").value;
+        if (password !== confirmPassword) {
+          registerError.textContent = "Passwords don't match";
+          registerError.classList.remove("hidden");
+          return;
+        }
 
-                if (password !== confirmPassword) {
-                    registerError.textContent = "Passwords don't match";
-                    registerError.classList.remove("hidden");
-                    return;
-                }
+        createUserWithEmailAndPassword(auth, email, password)
+          .then(({ user }) => updateProfile(user, { displayName: username }))
+          .then(() => {
+            registerError.classList.add("hidden");
+          })
+          .catch((err) => {
+            registerError.textContent = err.message;
+            registerError.classList.remove("hidden");
+          });
+      });
 
-                createUserWithEmailAndPassword(auth, email, password)
-                    .then(({ user }) => updateProfile(user, { displayName: username }))
-                    .then(() => {
-                        registerError.classList.add("hidden");
-                    })
-                    .catch((err) => {
-                        registerError.textContent = err.message;
-                        registerError.classList.remove("hidden");
-                    });
-            });
-
-            /* ----------  Google  ---------- */
-            googleBtn.addEventListener("click", () => {
-                signInWithPopup(auth, provider).catch((err) => {
-                    loginError.textContent = err.message;
-                    loginError.classList.remove("hidden");
-                });
-            });
-
-            /* ----------  Tab Toggle  ---------- */
-            qs("#loginTab").onclick = () => toggleTabs("login");
-            qs("#registerTab").onclick = () => toggleTabs("register");
-
-            function toggleTabs(tab) {
-                const isLogin = tab === "login";
-                loginForm.classList.toggle("hidden", !isLogin);
-                registerForm.classList.toggle("hidden", isLogin);
-                qs("#loginTab").classList.toggle("border-green-700", isLogin);
-                qs("#registerTab").classList.toggle("border-green-700", !isLogin);
-            }
-
-            /* ----------  Location Form  ---------- */
-            locationForm.addEventListener("submit", (e) => {
-                e.preventDefault();
-                const city = qs("#city").value;
-                const country = qs("#country").value;
-                localStorage.setItem("irrigationCity", city);
-                localStorage.setItem("irrigationCountry", country);
-                loadDashboard(city, country);
-            });
-
-            changeLocationBtn.addEventListener("click", () => {
-                dashboard.classList.add("hidden");
-                cityForm.classList.remove("hidden");
-            });
-
-            /* ----------  Dashboard helpers ---------- */
-            function restoreDashboard() {
-                const city = localStorage.getItem("irrigationCity");
-                const country = localStorage.getItem("irrigationCountry");
-                if (city && country) {
-                    loadDashboard(city, country);
-                }
-            }
-
-            function loadDashboard(city, country) {
-                cityForm.classList.add("hidden");
-                dashboard.classList.remove("hidden");
-                locationInfo.textContent = `${city}, ${country}`;
-                // TODO: call loadWeatherData & simulateSensorData here
-            }
+      googleBtn.addEventListener("click", () => {
+        signInWithPopup(auth, provider).catch((err) => {
+          loginError.textContent = err.message;
+          loginError.classList.remove("hidden");
         });
-    </script>
+      });
 
-    <style>
-        .dashboard-card {
-            transition: all 0.3s ease;
+      qs("#loginTab").onclick = () => toggleTabs("login");
+      qs("#registerTab").onclick = () => toggleTabs("register");
+
+      function toggleTabs(tab) {
+        const isLogin = tab === "login";
+        loginForm.classList.toggle("hidden", !isLogin);
+        registerForm.classList.toggle("hidden", isLogin);
+        qs("#loginTab").classList.toggle("border-green-700", isLogin);
+        qs("#registerTab").classList.toggle("border-green-700", !isLogin);
+      }
+
+      locationForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const city = qs("#city").value;
+        const country = qs("#country").value;
+        localStorage.setItem("irrigationCity", city);
+        localStorage.setItem("irrigationCountry", country);
+        loadDashboard(city, country);
+      });
+
+      changeLocationBtn.addEventListener("click", () => {
+        dashboard.classList.add("hidden");
+        cityForm.classList.remove("hidden");
+      });
+
+      function restoreDashboard() {
+        const city = localStorage.getItem("irrigationCity");
+        const country = localStorage.getItem("irrigationCountry");
+        if (city && country) {
+          loadDashboard(city, country);
         }
-        .dashboard-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-        }
-        .progress-bar {
-            height: 20px;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        .progress-fill {
-            height: 100%;
-            transition: width 0.5s ease;
-        }
-    </style>
+      }
+
+      function loadDashboard(city, country) {
+        cityForm.classList.add("hidden");
+        dashboard.classList.remove("hidden");
+        locationInfo.textContent = `${city}, ${country}`;
+        // TODO: call loadWeatherData & simulateSensorData here
+      }
+    });
+  </script>
+
+  <style>
+    /* Card styling */
+    .dashboard-card {
+      transition: all 0.3s ease;
+      border-radius: 1rem;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      background: #f9fafb;
+      padding: 1.5rem;
+    }
+    .dashboard-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Progress bar */
+    .progress-bar {
+      height: 20px;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #e5e7eb;
+    }
+    .progress-fill {
+      height: 100%;
+      transition: width 0.5s ease;
+    }
+
+    /* Buttons */
+    button {
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      cursor: pointer;
+    }
+
+    /* Modal background */
+    #loginModal {
+      backdrop-filter: blur(6px);
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    /* Tabs */
+    #loginTab, #registerTab {
+      transition: background-color 0.3s ease;
+    }
+    #loginTab:hover, #registerTab:hover {
+      background-color: #d1fae5;
+      cursor: pointer;
+    }
+  </style>
 </head>
 
 <body class="min-h-screen bg-[url('https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/567a0e4c-c038-48b5-87e1-0856dbb7ddbb.png')] bg-cover bg-center">
-    <!-- Login/Register Modal -->
-    <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 w-80">
-            <!-- Tabs -->
-            <div class="flex mb-4 border-b">
-                <button id="loginTab" class="flex-1 py-2 font-bold text-green-700 border-b-2 border-green-700">Login</button>
-                <button id="registerTab" class="flex-1 py-2 font-medium text-gray-500">Register</button>
+  <!-- Login/Register Modal -->
+  <div id="loginModal" class="fixed inset-0 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-8 w-96 max-w-full shadow-lg">
+      <!-- Tabs -->
+      <div class="flex mb-6 border-b border-gray-300">
+        <button id="loginTab" class="flex-1 py-3 font-semibold text-green-700 border-b-4 border-green-700 rounded-t-lg">
+          Login
+        </button>
+        <button id="registerTab" class="flex-1 py-3 font-semibold text-gray-500 rounded-t-lg">
+          Register
+        </button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="loginForm" class="space-y-5">
+        <input type="email" id="email" placeholder="Email" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" required />
+        <input type="password" id="password" placeholder="Password" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" required />
+        <div id="loginError" class="text-red-600 text-sm hidden"></div>
+        <button type="submit" class="w-full py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700">
+          Sign In
+        </button>
+      </form>
+
+      <!-- Divider -->
+      <div class="flex items-center my-6">
+        <div class="flex-grow border-t border-gray-300"></div>
+        <span class="mx-3 text-gray-500 font-semibold">OR</span>
+        <div class="flex-grow border-t border-gray-300"></div>
+      </div>
+
+      <!-- Google Sign-In -->
+      <button id="googleSignInBtn" class="w-full flex justify-center items-center py-3 border border-gray-300 rounded-lg shadow-sm text-gray-700 hover:bg-gray-100 transition">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo" class="h-6 w-6 mr-3" />
+        Sign in with Google
+      </button>
+
+      <!-- Register Form -->
+      <form id="registerForm" class="space-y-5 hidden mt-6">
+        <input type="text" id="regUsername" placeholder="Username" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" required />
+        <input type="email" id="regEmail" placeholder="Email" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" required />
+        <input type="password" id="regPassword" placeholder="Password" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" required />
+        <input type="password" id="regConfirmPassword" placeholder="Confirm Password" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" required />
+        <div id="registerError" class="text-red-600 text-sm hidden"></div>
+        <button type="submit" class="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700">
+          Register
+        </button>
+      </form>
+
+      <!-- Footer Links -->
+      <div class="mt-8 text-center text-gray-600 text-sm">
+        <p>Connect with me:</p>
+        <div class="flex justify-center space-x-6 mt-2">
+          <a href="https://www.linkedin.com/in/viraj-jamdhade" target="_blank" class="hover:opacity-80 transition">
+            <img src="https://cdn-icons-png.flaticon.com/512/174/174857.png" alt="LinkedIn" class="w-7 h-7 inline" />
+          </a>
+          <a href="https://github.com/viraj-jamdhade" target="_blank" class="hover:opacity-80 transition">
+            <img src="https://cdn-icons-png.flaticon.com/512/25/25231.png" alt="GitHub" class="w-7 h-7 inline" />
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <div class="container mx-auto px-4 py-8">
+    <!-- City Selection Form -->
+    <div id="cityForm" class="max-w-md mx-auto bg-white rounded-2xl shadow-lg overflow-hidden p-8">
+      <div class="text-center mb-8">
+        <h1 class="text-4xl font-extrabold text-green-700">Smart Irrigation System</h1>
+        <p class="text-gray-600 mt-3">Enter your location to begin monitoring</p>
+        <p class="text-sm text-gray-500 mt-6">Developed by Viraj Jamdhade</p>
+      </div>
+
+      <form id="locationForm" class="space-y-6">
+        <div>
+          <label for="city" class="block text-sm font-medium text-gray-700 mb-1">City</label>
+          <input type="text" id="city" name="city" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" required />
+        </div>
+        <div>
+          <label for="country" class="block text-sm font-medium text-gray-700 mb-1">Country</label>
+          <input type="text" id="country" name="country" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400" required />
+        </div>
+        <button type="submit" class="w-full py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition">
+          Start Monitoring
+        </button>
+      </form>
+    </div>
+
+    <!-- Dashboard (hidden by default) -->
+    <div id="dashboard" class="hidden mt-10">
+      <!-- Header -->
+      <div class="flex justify-between items-center mb-10">
+        <div>
+          <h1 class="text-4xl font-extrabold text-green-700">Smart Irrigation System</h1>
+          <p id="locationInfo" class="text-gray-600 mt-1 text-lg">Loading location...</p>
+        </div>
+        <button id="changeLocation" class="px-5 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+          Change Location
+        </button>
+      </div>
+
+      <!-- Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <!-- Weather Card -->
+        <div class="dashboard-card">
+          <div class="flex items-center mb-5">
+            <img src="https://openweathermap.org/img/wn/01d@2x.png" alt="Weather icon" class="w-12 h-12 mr-4" />
+            <h2 class="text-2xl font-semibold text-gray-800">Weather Conditions</h2>
+          </div>
+          <div class="space-y-3 text-gray-700">
+            <div class="flex justify-between">
+              <span>Current Temperature:</span>
+              <span id="temperature" class="font-semibold">--°C</span>
             </div>
-
-            <!-- Login Form -->
-            <form id="loginForm" class="space-y-4">
-                <input type="email" id="email" placeholder="Email" class="w-full p-2 border rounded" required />
-                <input type="password" id="password" placeholder="Password" class="w-full p-2 border rounded" required />
-                <div id="loginError" class="text-red-500 text-sm hidden"></div>
-                <button type="submit" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">Sign In</button>
-            </form>
-
-            <!-- Divider -->
-            <div class="flex items-center my-4">
-                <div class="flex-grow border-t border-gray-300"></div>
-                <span class="mx-2 text-gray-500 text-sm">OR</span>
-                <div class="flex-grow border-t border-gray-300"></div>
+            <div class="flex justify-between">
+              <span>Min Temperature:</span>
+              <span id="minTemp" class="font-semibold">--°C</span>
             </div>
+            <div class="flex justify-between">
+              <span>Max Temperature:</span>
+              <span id="maxTemp" class="font-semibold">--°C</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Humidity:</span>
+              <span id="humidity" class="font-semibold">--%</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Precipitation:</span>
+              <span id="precipitation" class="font-semibold">--mm</span>
+            </div>
+          </div>
+        </div>
 
-            <!-- Google Sign‑In -->
-            <button id="googleSignInBtn" class="w-full flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo" class="h-5 w-5 mr-2" />
-                Sign in with Google
+        <!-- Soil Moisture Card -->
+        <div class="dashboard-card">
+          <h2 class="text-2xl font-semibold text-gray-800 mb-5">Soil Moisture</h2>
+          <div class="flex justify-between mb-2 text-gray-700">
+            <span>Moisture Level:</span>
+            <span id="moistureLevel" class="font-semibold">--%</span>
+          </div>
+          <div class="progress-bar mb-3">
+            <div id="moistureBar" class="progress-fill bg-blue-500" style="width: 0%"></div>
+          </div>
+          <div id="moistureStatus" class="text-sm text-gray-500">Sensor data loading...</div>
+        </div>
+
+        <!-- Irrigation Control Card -->
+        <div class="dashboard-card">
+          <h2 class="text-2xl font-semibold text-gray-800 mb-5">Irrigation Control</h2>
+          <div class="flex justify-between items-center mb-3">
+            <span class="text-gray-700">System Status:</span>
+            <span id="systemStatus" class="px-3 py-1 rounded-full text-sm font-semibold bg-gray-200 text-gray-800">OFF</span>
+          </div>
+          <div class="flex justify-between items-center mb-5">
+            <span class="text-gray-700">Last Watered:</span>
+            <span id="lastWatered" class="text-sm text-gray-600">Never</span>
+          </div>
+          <div class="flex space-x-4">
+            <button id="autoBtn" class="flex-1 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition">
+              Auto Mode
             </button>
-
-            <!-- Register Form -->
-            <form id="registerForm" class="space-y-4 hidden mt-6">
-                <input type="text" id="regUsername" placeholder="Username" class="w-full p-2 border rounded" required />
-                <input type="email" id="regEmail" placeholder="Email" class="w-full p-2 border rounded" required />
-                <input type="password" id="regPassword" placeholder="Password" class="w-full p-2 border rounded" required />
-                <input type="password" id="regConfirmPassword" placeholder="Confirm Password" class="w-full p-2 border rounded" required />
-                <div id="registerError" class="text-red-500 text-sm hidden"></div>
-                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Register</button>
-            </form>
-
-            <!-- Footer Links -->
-            <div class="mt-6 text-center">
-                <p class="text-sm text-gray-600 mb-2">Connect with me:</p>
-                <div class="flex justify-center space-x-4">
-                    <a href="https://www.linkedin.com/in/viraj-jamdhade" target="_blank">
-                        <img src="https://cdn-icons-png.flaticon.com/512/174/174857.png" alt="LinkedIn" class="w-6 h-6" />
-                    </a>
-                    <a href="https://github.com/viraj-jamdhade" target="_blank">
-                        <img src="https://cdn-icons-png.flaticon.com/512/25/25231.png" alt="GitHub" class="w-6 h-6" />
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Container -->
-    <div class="container mx-auto px-4 py-8">
-        <!-- City Selection Form -->
-        <div id="cityForm" class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6">
-            <div class="text-center mb-6">
-                <h1 class="text-3xl font-bold text-green-700">Smart Irrigation System</h1>
-                <p class="text-gray-600 mt-2">Enter your location to begin monitoring</p>
-                <p class="text-sm text-gray-500 mt-4">Developed by Viraj Jamdhade</p>
-            </div>
-
-            <form id="locationForm" class="space-y-4">
-                <div>
-                    <label for="city" class="block text-sm font-medium text-gray-700">City</label>
-                    <input type="text" id="city" name="city" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" required />
-                </div>
-                <div>
-                    <label for="country" class="block text-sm font-medium text-gray-700">Country</label>
-                    <input type="text" id="country" name="country" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" required />
-                </div>
-                <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">
-                    Start Monitoring
-                </button>
-            </form>
+            <button id="manualBtn" class="flex-1 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
+              Manual Water
+            </button>
+          </div>
         </div>
 
-        <!-- Dashboard (hidden by default) -->
-        <div id="dashboard" class="hidden">
-            <!-- Header -->
-            <div class="flex justify-between items-center mb-8">
-                <div>
-                    <h1 class="text-3xl font-bold text-green-700">Smart Irrigation System</h1>
-                    <p id="locationInfo" class="text-gray-600">Loading location...</p>
-                </div>
-                <button id="changeLocation" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">Change Location</button>
-            </div>
-
-            <!-- Weather Card -->
-            <div class="dashboard-card bg-white rounded-lg shadow-md p-6 mb-4">
-                <h2 class="text-xl font-semibold text-gray-800">Weather Conditions</h2>
-                <div class="flex justify-between">
-                    <span class="text-gray-600">Temperature:</span>
-                    <span id="temperature" class="font-medium">--°C</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-600">Min:</span>
-                    <span id="minTemp" class="font-medium">--°C</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-600">Max:</span>
-                    <span id="maxTemp" class="font-medium">--°C</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-600">Humidity:</span>
-                    <span id="humidity" class="font-medium">--%</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-600">Precipitation:</span>
-                    <span id="precipitation" class="font-medium">--mm</span>
-                </div>
-            </div>
-
-            <!-- Soil Moisture Card -->
-            <div class="dashboard-card bg-white rounded-lg shadow-md p-6 mb-4">
-                <h2 class="text-xl font-semibold text-gray-800">Soil Moisture</h2>
-                <div class="flex justify-between mb-1">
-                    <span class="text-gray-600">Moisture Level:</span>
-                    <span id="moistureLevel" class="font-medium">--%</span>
-                </div>
-                <div class="progress-bar bg-gray-200">
-                    <div id="moistureBar" class="progress-fill bg-blue-500" style="width: 0%"></div>
-                </div>
-                <div class="text-sm text-gray-500" id="moistureStatus">Sensor data loading...</div>
-            </div>
-
-            <!-- Irrigation Control Card -->
-            <div class="dashboard-card bg-white rounded-lg shadow-md p-6 mb-4">
-                <h2 class="text-xl font-semibold text-gray-800">Irrigation Control</h2>
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-gray-600">System Status:</span>
-                    <span id="systemStatus" class="px-2 py-1 rounded text-sm font-medium bg-gray-200 text-gray-800">OFF</span>
-                </div>
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-gray-600">Last Watered:</span>
-                    <span id="lastWatered" class="text-sm">Never</span>
-                </div>
-                <div class="flex space-x-3">
-                    <button id="autoBtn" class="flex-1 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">Auto Mode</button>
-                    <button id="manualBtn" class="flex-1 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Manual Water</button>
-                </div>
-            </div>
-
-            <!-- Water Usage Card -->
-            <div class="dashboard-card bg-white rounded-lg shadow-md p-6 mb-4">
-                <h2 class="text-xl font-semibold text-gray-800">Water Usage</h2>
-                <div class="flex justify-between mb-1">
-                    <span class="text-gray-600">Today's Usage:</span>
-                    <span id="todayUsage" class="font-medium">-- liters</span>
-                </div>
-                <div class="progress-bar bg-gray-200">
-                    <div id="usageBar" class="progress-fill bg-green-500" style="width: 0%"></div>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-600">Weekly Average:</span>
-                    <span id="weeklyAvg" class="font-medium">-- liters/day</span>
-                </div>
-            </div>
-
-            <!-- Weather Forecast Card -->
-            <div class="dashboard-card bg-white rounded-lg shadow-md p-6 mb-4">
-                <h2 class="text-xl font-semibold text-gray-800">3-Day Forecast</h2>
-                <div id="forecastContainer" class="space-y-3">
-                    <div class="text-center py-4">Loading forecast...</div>
-                </div>
-            </div>
-
-            <!-- System Recommendations Card -->
-            <div class="dashboard-card bg-white rounded-lg shadow-md p-6 mb-4">
-                <h2 class="text-xl font-semibold text-gray-800">Recommendations</h2>
-                <div id="recommendations" class="space-y-2 text-sm">
-                    <div class="p-3 bg-yellow-50 rounded-md text-yellow-800">
-                        System recommendations will appear here based on weather and soil conditions.
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</body>
-</html>
-
+        <!-- Water Usage Card -->
+        <div class="dashboard-card">
+          <h2 class="text-2xl font-semibold text-gray-800 mb-5">Water Usage</h2>
+          <div class="flex justify-between mb-2 text-gray-700">
+            <span>Today's Usage:</span>
+            <span id="todayUsage" class="font-semibold">-- liters</span>
+          </div>
+          <div class="progress-bar mb-3">
+            <div id="usageBar" class="progress-fill bg-green-500" style="width: 0%"></div>
+          </div>
+          <div class="flex justify-between text-gray-700">
+            <span>Weekly Average
